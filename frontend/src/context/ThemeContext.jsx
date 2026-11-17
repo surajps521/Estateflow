@@ -3,7 +3,7 @@ import {createContext,useContext,useEffect,useMemo,useState} from 'react';
 const ThemeContext=createContext(null);
 
 export function ThemeProvider({children}){
-  const [theme,setTheme]=useState(()=>localStorage.getItem('crm_theme')||'dark');
+  const [theme,setTheme]=useState(()=>localStorage.getItem('crm_theme')||'light');
   useEffect(()=>{
     document.documentElement.classList.toggle('dark',theme==='dark');
     localStorage.setItem('crm_theme',theme);
