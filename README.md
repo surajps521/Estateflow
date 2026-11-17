@@ -22,8 +22,6 @@ A full-stack starter implementation following the supplied 6-page Real Estate CR
 - DTO request/response records and validation
 - Swagger UI and centralized error responses
 - Responsive React pages for Dashboard, interactive property discovery, Leads, Site Visits and Deals
-- Light-first premium SaaS shell with Plus Jakarta Sans / DM Sans typography
-- Collapsible role-aware sidebar with Agents and Admin Customers directories
 
 ## Prerequisites
 - JDK 21+
@@ -66,8 +64,6 @@ Then:
 npm run dev
 ```
 Open `http://localhost:5173`.
-
-The application starts in the white/light theme. The theme toggle remains available in the top toolbar and the selected preference is persisted per browser.
 
 ## 4. First login
 Use the bootstrap credentials configured with `ADMIN_EMAIL` and `ADMIN_PASSWORD`. The sample values above are development-only. Login returns a JWT. The React Axios client attaches it to subsequent requests.
