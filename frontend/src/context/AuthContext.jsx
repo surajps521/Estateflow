@@ -12,7 +12,7 @@ export function AuthProvider({children}) {
     const {data}=await api.post('/auth/register/customer',payload);
     return data;
   }
-  function logout(){localStorage.removeItem('crm_token');localStorage.removeItem('crm_user');setUser(null);window.location.href='/login';}
+  function logout(){localStorage.removeItem('crm_token');localStorage.removeItem('crm_user');setUser(null);window.location.href='/';}
   const value=useMemo(()=>({user,login,registerCustomer,logout}),[user]);
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
