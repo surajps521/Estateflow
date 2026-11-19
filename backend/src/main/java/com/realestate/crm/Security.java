@@ -82,7 +82,7 @@ class SecurityConfig {
       .addFilterBefore(jwt,UsernamePasswordAuthenticationFilter.class).build();
   }
   @Bean CorsConfigurationSource corsConfigurationSource(){
-    CorsConfiguration c=new CorsConfiguration();c.setAllowedOrigins(java.util.List.of("http://localhost:5173"));c.setAllowedMethods(java.util.List.of("GET","POST","PATCH","PUT","DELETE","OPTIONS"));c.setAllowedHeaders(java.util.List.of("*"));c.setAllowCredentials(true);
+    CorsConfiguration c=new CorsConfiguration();c.setAllowedOrigins(java.util.List.of("http://localhost:5173","http://127.0.0.1:5173"));c.setAllowedMethods(java.util.List.of("GET","POST","PATCH","PUT","DELETE","OPTIONS"));c.setAllowedHeaders(java.util.List.of("*"));c.setAllowCredentials(true);
     UrlBasedCorsConfigurationSource s=new UrlBasedCorsConfigurationSource();s.registerCorsConfiguration("/**",c);return s;
   }
 }
