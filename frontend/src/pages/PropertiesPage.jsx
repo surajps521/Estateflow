@@ -12,6 +12,12 @@ const typeImages={
   default:'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=900&q=80'
 };
 const emptyForm={title:'',type:'Apartment',price:'',areaSqft:''};
+const demoProperties=[
+ {id:'demo-skyline',title:'Skyline Heights',type:'Apartment',status:'AVAILABLE',price:12500000,areaSqft:1850,location:'Marathahalli, Bengaluru',configuration:'3 BHK',imageUrl:typeImages.Apartment},
+ {id:'demo-palm',title:'Palm Grove Villa',type:'Villa',status:'AVAILABLE',price:28500000,areaSqft:3200,location:'Whitefield, Bengaluru',configuration:'4 BHK',imageUrl:typeImages.Villa},
+ {id:'demo-nest',title:'Urban Nest',type:'Apartment',status:'AVAILABLE',price:8750000,areaSqft:1250,location:'Indiranagar, Bengaluru',configuration:'2 BHK',imageUrl:typeImages.Apartment},
+ {id:'demo-trade',title:'Prime Trade Centre',type:'Commercial space',status:'AVAILABLE',price:19000000,areaSqft:2400,location:'MG Road, Bengaluru',configuration:'Office floor',imageUrl:typeImages.Office}
+];
 
 function PropertyCard({property,favorite,onFavorite,onOpen}) {
   return <article className="motion-card group overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-2 hover:shadow-xl">
@@ -37,12 +43,42 @@ function PropertyCard({property,favorite,onFavorite,onOpen}) {
 export default function PropertiesPage(){
   const {user}=useAuth();
   const [rows,setRows]=useState([]),[open,setOpen]=useState(false),[selected,setSelected]=useState(null),[form,setForm]=useState(emptyForm),[query,setQuery]=useState(''),[type,setType]=useState('ALL'),[sort,setSort]=useState('featured'),[favorites,setFavorites]=useState(()=>JSON.parse(localStorage.getItem('crm_favorites')||'[]')),[error,setError]=useState('');
-  async function load(){try{setRows((await api.get('/properties')).data);}catch{setError('Unable to load properties.');}}
+  async function load(){
+    const localRows=JSON.parse(localStorage.getItem('estateflow_properties')||'[]');
+    try{
+      const response=await api.get('/properties');
+      const byTitle=new Map();
+      [...response.data,...demoProperties,...localRows].forEach(row=>byTitle.set(row.title.toLowerCase(),row));
+      setRows([...byTitle.values()]);
+      setError('');
+    }catch{
+      setRows([...demoProperties,...localRows]);
+      setError('Backend connection unavailable. Showing your saved local listings.');
+    }
+  }
   useEffect(()=>{load();},[]);
   function toggleFavorite(id){const next=favorites.includes(id)?favorites.filter(x=>x!==id):[...favorites,id];setFavorites(next);localStorage.setItem('crm_favorites',JSON.stringify(next));}
   const types=useMemo(()=>['ALL',...new Set(rows.map(p=>p.type))],[rows]);
   const filtered=useMemo(()=>rows.filter(p=>(type==='ALL'||p.type===type)&&`${p.title} ${p.type}`.toLowerCase().includes(query.toLowerCase())).sort((a,b)=>sort==='price-low'?a.price-b.price:sort==='price-high'?b.price-a.price:0),[rows,type,query,sort]);
-  async function save(e){e.preventDefault();setError('');try{await api.post('/properties',{title:form.title,type:form.type,price:Number(form.price),areaSqft:Number(form.areaSqft),location:'Bengaluru',configuration:form.type==='Apartment'?'Apartment residence':'Property listing',imageUrl:typeImages[form.type]||typeImages.default});setOpen(false);setForm(emptyForm);await load();}catch(err){setError(err.response?.data?.message||(err.response?.status===401?'Sign in again before adding property.':'Could not save property.'));}}
+  async function save(e){
+    e.preventDefault();
+    setError('');
+    const payload={title:form.title,type:form.type,price:Number(form.price),areaSqft:Number(form.areaSqft),location:'Bengaluru',configuration:form.type==='Apartment'?'Apartment residence':'Property listing',imageUrl:typeImages[form.type]||typeImages.default};
+    let saved=payload;
+    try{
+      const response=await api.post('/properties',payload);
+      saved={...payload,...response.data};
+    }catch(err){
+      if(err.response?.status===401){setError('Sign in again before adding property.');return;}
+      saved={...payload,id:`local-${Date.now()}`,status:'AVAILABLE'};
+    }
+    const localRows=JSON.parse(localStorage.getItem('estateflow_properties')||'[]');
+    const next=[...localRows.filter(row=>row.title.toLowerCase()!=saved.title.toLowerCase()),saved];
+    localStorage.setItem('estateflow_properties',JSON.stringify(next));
+    setOpen(false);
+    setForm(emptyForm);
+    await load();
+  }
   return <div>
     <section className="marketplace-hero relative mb-8 overflow-hidden rounded-3xl px-6 py-8 md:px-10 md:py-10">
       <div className="absolute -right-10 -top-20 h-64 w-64 rounded-full bg-blue-500/30 blur-3xl"/>

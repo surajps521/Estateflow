@@ -15,8 +15,8 @@ export default function LandingPage() {
           <a href="#solution">Solutions</a>
         </nav>
         <div className="landing-actions">
-          <Link className="landing-signin" to="/login">Sign in</Link>
-          <Link className="landing-primary" to="/login">Try EstateFlow <ArrowRight size={15}/></Link>
+          <a className="landing-signin" href="/login">Sign in</a>
+          <a className="landing-primary" href="/login">Try EstateFlow <ArrowRight size={15}/></a>
         </div>
       </header>
 
@@ -27,7 +27,7 @@ export default function LandingPage() {
             <h1>Property management, <em>made beautifully simple.</em></h1>
             <p className="landing-description">Manage properties, nurture leads, coordinate visits and close deals from one intelligent real estate workspace.</p>
             <div className="landing-hero-actions">
-              <Link className="landing-primary landing-primary-large" to="/login">Get started <ArrowRight size={17}/></Link>
+              <a className="landing-primary landing-primary-large" href="/login">Get started <ArrowRight size={17}/></a>
               <a className="landing-secondary" href="#features">Explore the platform</a>
             </div>
             <div className="landing-proof">
