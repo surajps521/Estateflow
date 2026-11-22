@@ -8,6 +8,7 @@ import java.util.UUID;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+import org.hibernate.annotations.Check;
 
 @MappedSuperclass
 @EntityListeners(AuditingEntityListener.class)
@@ -26,6 +27,7 @@ enum AssignmentRequestStatus { PENDING, ACCEPTED, REJECTED, CANCELLED }
 enum NotificationType { AGENT_REQUEST, REQUEST_UPDATE, RECOMMENDATION, SITE_VISIT, DEAL }
 
 @Entity @Table(name="users", uniqueConstraints=@UniqueConstraint(columnNames="email"))
+@Check(constraints="role in ('ADMIN', 'AGENT', 'CUSTOMER')")
 class User extends BaseEntity {
   @Column(nullable=false) String email;
   @Column(name="password_hash", nullable=false) String passwordHash;

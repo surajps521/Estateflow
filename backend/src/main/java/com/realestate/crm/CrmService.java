@@ -19,7 +19,8 @@ class CrmService {
   }
   AuthResponse login(LoginRequest r){authManager.authenticate(new UsernamePasswordAuthenticationToken(r.email(),r.password()));User u=users.findByEmail(r.email()).orElseThrow();if(!u.isActive())throw new ResponseStatusException(HttpStatus.FORBIDDEN,"Account is inactive");return new AuthResponse(tokens.generate(u),u.getId(),u.getEmail(),u.getRole().name());}
   User register(RegisterRequest r){if(r.role()==Role.CUSTOMER)throw new ResponseStatusException(HttpStatus.BAD_REQUEST,"Use customer registration for customer accounts");return createUser(r.email(),r.password(),r.role(),r.email(),null,null,null,null,null);}
-  User registerCustomer(CustomerRegisterRequest r){return createUser(r.email(),r.password(),Role.CUSTOMER,r.displayName(),r.phone(),r.preferredLocation(),r.budgetMax(),r.requirements(),null);}
+  @Transactional
+  User registerCustomer(CustomerRegisterRequest r){return createUser(r.email().trim().toLowerCase(Locale.ROOT),r.password(),Role.CUSTOMER,r.displayName(),r.phone(),r.preferredLocation(),r.budgetMax(),r.requirements(),null);}
   private User createUser(String email,String password,Role role,String displayName,String phone,String location,BigDecimal budget,String requirements,String specialization){
     if(users.findByEmail(email).isPresent())throw new ResponseStatusException(HttpStatus.CONFLICT,"Email already registered");
     User u=users.save(new User(email,encoder.encode(password),role));

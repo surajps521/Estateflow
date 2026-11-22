@@ -1,6 +1,6 @@
 import {useState} from 'react';
 import {Navigate,Link} from 'react-router-dom';
-import {ArrowLeft,Building2,ShieldCheck,UserRound} from 'lucide-react';
+import {ArrowLeft,Building2,Eye,EyeOff,ShieldCheck,UserRound} from 'lucide-react';
 import {useAuth} from '../context/AuthContext';
 import {useTheme} from '../context/ThemeContext';
 
@@ -16,8 +16,17 @@ export default function LoginPage(){
   const [location,setLocation]=useState('');
   const [budget,setBudget]=useState('');
   const [requirements,setRequirements]=useState('');
+  const [showPassword,setShowPassword]=useState(false);
   const [error,setError]=useState('');
   const [busy,setBusy]=useState(false);
+  const passwordRules={
+    length:password.length>=8,
+    uppercase:/[A-Z]/.test(password),
+    lowercase:/[a-z]/.test(password),
+    number:/\d/.test(password),
+    special:/[^A-Za-z0-9]/.test(password)
+  };
+  const validPassword=Object.values(passwordRules).every(Boolean);
 
   if(user)return <Navigate to="/dashboard" replace />;
 
@@ -27,6 +36,11 @@ export default function LoginPage(){
     setBusy(true);
     try {
       if(mode==='register'){
+        if(!validPassword){
+          setError('Password does not meet the required rules.');
+          setBusy(false);
+          return;
+        }
         await registerCustomer({email,password,displayName,phone,preferredLocation:location,budgetMax:budget?Number(budget):null,requirements});
         setMode('login');
         setLoginRole('CUSTOMER');
@@ -37,7 +51,9 @@ export default function LoginPage(){
         window.location.href='/dashboard';
       }
     } catch(err){
-      setError(err.response?.data?.message||err.message||'Unable to complete this request.');
+      const data=err.response?.data;
+      const validationMessage=data?.errors?Object.values(data.errors).join(' '):null;
+      setError(validationMessage||data?.message||err.message||'Unable to complete this request.');
     } finally {
       setBusy(false);
     }
@@ -80,7 +96,19 @@ export default function LoginPage(){
       <label>Email</label>
       <input type="email" value={email} onChange={e=>setEmail(e.target.value)} required />
       <label>Password</label>
-      <input type="password" value={password} onChange={e=>setPassword(e.target.value)} required />
+      <div className="password-field">
+        <input type={showPassword?'text':'password'} value={password} onChange={e=>setPassword(e.target.value)} required aria-label="Password" />
+        <button type="button" className="password-toggle" onClick={()=>setShowPassword(value=>!value)} aria-label={showPassword?'Hide password':'Show password'} title={showPassword?'Hide password':'Show password'}>
+          {showPassword?<EyeOff size={18}/>:<Eye size={18}/>}
+        </button>
+      </div>
+      {mode==='register'&&<div className="password-rules" aria-live="polite">
+        <span className={passwordRules.length?'valid':''}>8+ characters</span>
+        <span className={passwordRules.uppercase?'valid':''}>Uppercase letter</span>
+        <span className={passwordRules.lowercase?'valid':''}>Lowercase letter</span>
+        <span className={passwordRules.number?'valid':''}>Number</span>
+        <span className={passwordRules.special?'valid':''}>Special character</span>
+      </div>}
       <button disabled={busy} className="login-submit">{busy?(mode==='login'?'Signing in...':'Creating account...'):(mode==='login'?`Sign in as ${loginRole.toLowerCase()}`:'Create customer account')}</button>
     </form>
   </div>;

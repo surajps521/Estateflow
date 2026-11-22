@@ -6,8 +6,8 @@ import java.time.LocalDate;
 import java.util.UUID;
 
 record LoginRequest(@NotBlank @Email String email,@NotBlank String password){}
-record RegisterRequest(@NotBlank @Email String email,@NotBlank @Size(min=8) String password,@NotNull Role role){}
-record CustomerRegisterRequest(@NotBlank @Email String email,@NotBlank @Size(min=8) String password,@NotBlank String displayName,@NotBlank String phone,String preferredLocation,@Positive BigDecimal budgetMax,String requirements){}
+record RegisterRequest(@NotBlank @Email String email,@NotBlank @Size(min=8) @Pattern(regexp="^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[^A-Za-z0-9]).{8,}$",message="Password must contain 8+ characters, uppercase and lowercase letters, a number, and a special character") String password,@NotNull Role role){}
+record CustomerRegisterRequest(@NotBlank @Email String email,@NotBlank @Size(min=8) @Pattern(regexp="^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[^A-Za-z0-9]).{8,}$",message="Password must contain 8+ characters, uppercase and lowercase letters, a number, and a special character") String password,@NotBlank String displayName,@NotBlank String phone,String preferredLocation,@Positive BigDecimal budgetMax,String requirements){}
 record AuthResponse(String token,UUID userId,String email,String role){}
 record AgentResponse(UUID id,String email,String displayName,String phone,Integer experienceYears,String specialization,String profileImageUrl,boolean available){}
 record UserAdminResponse(UUID id,String email,String role,boolean active){}
