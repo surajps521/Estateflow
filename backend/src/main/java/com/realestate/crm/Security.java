@@ -11,6 +11,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -71,8 +72,9 @@ class SecurityConfig {
   @Bean PasswordEncoder passwordEncoder(){return new BCryptPasswordEncoder();}
   @Bean AuthenticationManager authenticationManager(AuthenticationConfiguration c)throws Exception{return c.getAuthenticationManager();}
   @Bean SecurityFilterChain filterChain(HttpSecurity http,JwtAuthenticationFilter jwt)throws Exception{
-    return http.csrf(c->c.disable()).cors(c->{}).sessionManagement(s->s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-      .authorizeHttpRequests(a->a.requestMatchers("/api/v1/auth/login","/api/v1/auth/register/customer","/v3/api-docs/**","/swagger-ui/**","/swagger-ui.html").permitAll()
+    return http.csrf(c->c.disable()).cors(Customizer.withDefaults()).sessionManagement(s->s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+      .authorizeHttpRequests(a->a.requestMatchers(HttpMethod.OPTIONS,"/**").permitAll()
+        .requestMatchers("/api/v1/auth/login","/api/v1/auth/register/customer","/v3/api-docs/**","/swagger-ui/**","/swagger-ui.html").permitAll()
         .requestMatchers(HttpMethod.POST,"/api/v1/auth/register").hasRole("ADMIN")
         .requestMatchers(HttpMethod.POST,"/api/v1/properties").hasRole("ADMIN")
         .requestMatchers(HttpMethod.GET,"/api/v1/leads/my","/api/v1/site-visits/my","/api/v1/deals/my","/api/v1/recommendations/my").hasRole("CUSTOMER")
@@ -82,7 +84,12 @@ class SecurityConfig {
       .addFilterBefore(jwt,UsernamePasswordAuthenticationFilter.class).build();
   }
   @Bean CorsConfigurationSource corsConfigurationSource(){
-    CorsConfiguration c=new CorsConfiguration();c.setAllowedOrigins(java.util.List.of("http://localhost:5173","http://127.0.0.1:5173"));c.setAllowedMethods(java.util.List.of("GET","POST","PATCH","PUT","DELETE","OPTIONS"));c.setAllowedHeaders(java.util.List.of("*"));c.setAllowCredentials(true);
+    CorsConfiguration c=new CorsConfiguration();
+    c.setAllowedOriginPatterns(java.util.List.of("http://localhost:*","http://127.0.0.1:*"));
+    c.setAllowedMethods(java.util.List.of("GET","POST","PATCH","PUT","DELETE","OPTIONS","HEAD"));
+    c.setAllowedHeaders(java.util.List.of("Authorization","Content-Type","Accept","Origin","X-Requested-With"));
+    c.setExposedHeaders(java.util.List.of("Authorization"));
+    c.setAllowCredentials(true);
     UrlBasedCorsConfigurationSource s=new UrlBasedCorsConfigurationSource();s.registerCorsConfiguration("/**",c);return s;
   }
 }

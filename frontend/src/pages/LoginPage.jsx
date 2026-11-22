@@ -53,7 +53,8 @@ export default function LoginPage(){
     } catch(err){
       const data=err.response?.data;
       const validationMessage=data?.errors?Object.values(data.errors).join(' '):null;
-      setError(validationMessage||data?.message||err.message||'Unable to complete this request.');
+      const networkMessage=!err.response?'Cannot reach the API. Start the backend on port 8080, then try again.':null;
+      setError(validationMessage||data?.message||networkMessage||err.message||'Unable to complete this request.');
     } finally {
       setBusy(false);
     }

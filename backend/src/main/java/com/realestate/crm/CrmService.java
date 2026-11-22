@@ -17,7 +17,17 @@ class CrmService {
   CrmService(UserRepository u,AgentProfileRepository ap,CustomerProfileRepository cp,PropertyRepository p,LeadRepository l,SiteVisitRepository v,DealRepository d,AssignmentRequestRepository ar,RecommendationRepository rr,NotificationRepository n,PasswordEncoder e,AuthenticationManager a,JwtTokenProvider t){
     users=u;agentProfiles=ap;customerProfiles=cp;properties=p;leads=l;visits=v;deals=d;assignmentRequests=ar;recommendations=rr;notifications=n;encoder=e;authManager=a;tokens=t;
   }
-  AuthResponse login(LoginRequest r){authManager.authenticate(new UsernamePasswordAuthenticationToken(r.email(),r.password()));User u=users.findByEmail(r.email()).orElseThrow();if(!u.isActive())throw new ResponseStatusException(HttpStatus.FORBIDDEN,"Account is inactive");return new AuthResponse(tokens.generate(u),u.getId(),u.getEmail(),u.getRole().name());}
+  AuthResponse login(LoginRequest r){
+    String email=r.email().trim().toLowerCase(Locale.ROOT);
+    try {
+      authManager.authenticate(new UsernamePasswordAuthenticationToken(email,r.password()));
+    } catch(BadCredentialsException|DisabledException|LockedException e){
+      throw new ResponseStatusException(HttpStatus.UNAUTHORIZED,"Invalid email or password");
+    }
+    User u=users.findByEmail(email).orElseThrow(()->new ResponseStatusException(HttpStatus.UNAUTHORIZED,"Invalid email or password"));
+    if(!u.isActive())throw new ResponseStatusException(HttpStatus.FORBIDDEN,"Account is inactive");
+    return new AuthResponse(tokens.generate(u),u.getId(),u.getEmail(),u.getRole().name());
+  }
   User register(RegisterRequest r){if(r.role()==Role.CUSTOMER)throw new ResponseStatusException(HttpStatus.BAD_REQUEST,"Use customer registration for customer accounts");return createUser(r.email(),r.password(),r.role(),r.email(),null,null,null,null,null);}
   @Transactional
   User registerCustomer(CustomerRegisterRequest r){return createUser(r.email().trim().toLowerCase(Locale.ROOT),r.password(),Role.CUSTOMER,r.displayName(),r.phone(),r.preferredLocation(),r.budgetMax(),r.requirements(),null);}
