@@ -29,6 +29,9 @@ class RegistrationIntegrationTest {
     @Autowired UserRepository users;
     @Autowired AgentProfileRepository agentProfiles;
     @Autowired CustomerProfileRepository customerProfiles;
+    @Autowired AssignmentRequestRepository assignmentRequests;
+    @Autowired LeadRepository leads;
+    @Autowired PropertyRepository properties;
 
     @Test
     void registersAdminAgentAndCustomerRoles() {
@@ -63,5 +66,40 @@ class RegistrationIntegrationTest {
         service.registerCustomer(request);
 
         assertThrows(ResponseStatusException.class,()->service.registerCustomer(request));
+    }
+
+    @Test
+    void customerRequestIsVisibleToSelectedAgentBeforeAcceptance() {
+        User agent=service.register(new RegisterRequest(
+            "meera-request-test@crm.local","Password123!",Role.AGENT));
+        User customer=service.registerCustomer(new CustomerRegisterRequest(
+            "ram-request-test@crm.local","Password123!","Ram","1234567890",
+            "Bengaluru",new BigDecimal("5000000"),"Apartment"));
+        Property property=new Property();
+        property.title="Request Test Residence";
+        property.type="Apartment";
+        property.price=new BigDecimal("5000000");
+        property.areaSqft=1200;
+        property.location="Bengaluru";
+        property=properties.save(property);
+
+        AssignmentRequestResponse created=service.createAssignment(
+            new AgentRequest(agent.getId(),property.getId(),"Looking for a 2 BHK"),customer.getId());
+
+        assertEquals("PENDING",created.status());
+        assertEquals(1,service.pendingAssignments(agent.getId()).size());
+        assertEquals(created.id(),service.pendingAssignments(agent.getId()).get(0).id());
+        assertEquals(0,leads.findByAgentId(agent.getId()).size());
+        assertEquals(1,service.myAssignments(customer.getId()).size());
+        assertEquals(created.id(),service.myAssignments(customer.getId()).get(0).id());
+
+        AssignmentRequestResponse accepted=service.updateAssignment(
+            created.id(),agent.getId(),AssignmentRequestStatus.ACCEPTED);
+
+        assertEquals("ACCEPTED",accepted.status());
+        assertEquals(0,service.pendingAssignments(agent.getId()).size());
+        assertEquals(1,leads.findByAgentId(agent.getId()).size());
+        assertEquals(customer.getId(),leads.findByAgentId(agent.getId()).get(0).getCustomer().getId());
+        assertNotNull(assignmentRequests.findById(created.id()).orElseThrow().getLead());
     }
 }
