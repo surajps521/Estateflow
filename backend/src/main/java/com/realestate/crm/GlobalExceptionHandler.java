@@ -20,6 +20,6 @@ class GlobalExceptionHandler {
    log.warn("Malformed API request: {}",e.getMostSpecificCause().getMessage());
    return ResponseEntity.badRequest().body(new ErrorResponse("The request contains invalid field values. Please refresh and select a valid property and agent.",Instant.now(),null));
  }
- @ExceptionHandler(DataIntegrityViolationException.class) ResponseEntity<ErrorResponse> dataConflict(DataIntegrityViolationException e){log.warn("Database constraint violation",e);return ResponseEntity.status(HttpStatus.CONFLICT).body(new ErrorResponse("This account could not be created because the details are already in use.",Instant.now(),null));}
+ @ExceptionHandler(DataIntegrityViolationException.class) ResponseEntity<ErrorResponse> dataConflict(DataIntegrityViolationException e){log.warn("Database constraint violation",e);return ResponseEntity.status(HttpStatus.CONFLICT).body(new ErrorResponse("The request conflicts with existing data. Please review the details and try again.",Instant.now(),null));}
  @ExceptionHandler(Exception.class) ResponseEntity<ErrorResponse> other(Exception e){log.error("Unhandled request error",e);return ResponseEntity.status(500).body(new ErrorResponse("Unexpected server error",Instant.now(),null));}
 }

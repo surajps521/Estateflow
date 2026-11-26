@@ -19,15 +19,15 @@ abstract class BaseEntity {
   @LastModifiedDate @Column(nullable=false) Instant updatedAt;
   public UUID getId(){return id;} public Instant getCreatedAt(){return createdAt;} public Instant getUpdatedAt(){return updatedAt;}
 }
-enum Role { ADMIN, AGENT, CUSTOMER }
-enum PropertyStatus { AVAILABLE, RESERVED, SOLD }
+enum Role { SUPER_ADMIN, OWNER, AGENT, CUSTOMER }
+enum PropertyStatus { AVAILABLE, RESERVED, SOLD, ARCHIVED }
 enum LeadStage { NEW, CONTACTED, VISIT_SCHEDULED, NEGOTIATION, WON, LOST }
 enum VisitStatus { SCHEDULED, COMPLETED, CANCELLED }
 enum AssignmentRequestStatus { PENDING, ACCEPTED, REJECTED, CANCELLED }
 enum NotificationType { AGENT_REQUEST, REQUEST_UPDATE, RECOMMENDATION, SITE_VISIT, DEAL }
 
 @Entity @Table(name="users", uniqueConstraints=@UniqueConstraint(columnNames="email"))
-@Check(constraints="role in ('ADMIN', 'AGENT', 'CUSTOMER')")
+@Check(constraints="role in ('SUPER_ADMIN', 'OWNER', 'AGENT', 'CUSTOMER')")
 class User extends BaseEntity {
   @Column(nullable=false) String email;
   @Column(name="password_hash", nullable=false) String passwordHash;
@@ -70,13 +70,14 @@ class Property extends BaseEntity {
   @Column(name="type",nullable=false) String type;
   @Enumerated(EnumType.STRING) @Column(nullable=false) PropertyStatus status=PropertyStatus.AVAILABLE;
   @Column(nullable=false,precision=14,scale=2) BigDecimal price;
+  @Column(name="base_price",precision=14,scale=2) BigDecimal basePrice;
   @Column(name="area_sqft",nullable=false) Integer areaSqft;
   @Column String location;
   @Column String configuration;
-  @Column(name="image_url") String imageUrl;
+  @Column(name="image_url",columnDefinition="TEXT") String imageUrl;
   protected Property(){}
   public String getTitle(){return title;} public String getType(){return type;} public PropertyStatus getStatus(){return status;}
-  public BigDecimal getPrice(){return price;} public Integer getAreaSqft(){return areaSqft;} public String getLocation(){return location;} public String getConfiguration(){return configuration;} public String getImageUrl(){return imageUrl;}
+  public BigDecimal getPrice(){return price;} public BigDecimal getBasePrice(){return basePrice;} public Integer getAreaSqft(){return areaSqft;} public String getLocation(){return location;} public String getConfiguration(){return configuration;} public String getImageUrl(){return imageUrl;}
 }
 @Entity @Table(name="leads")
 class Lead extends BaseEntity {

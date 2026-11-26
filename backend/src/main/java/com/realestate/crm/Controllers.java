@@ -9,9 +9,10 @@ import org.springframework.web.bind.annotation.*;
 class AuthController {
   final CrmService service; AuthController(CrmService s){service=s;}
   @PostMapping("/login") AuthResponse login(@Valid @RequestBody LoginRequest r){return service.login(r);}
-  @PostMapping("/register") @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
+  @PostMapping("/register") @org.springframework.security.access.prepost.PreAuthorize("hasRole('SUPER_ADMIN')")
   ResponseEntity<?> register(@Valid @RequestBody RegisterRequest r){User u=service.register(r);return ResponseEntity.status(201).body(Map.of("id",u.getId(),"email",u.getEmail(),"role",u.getRole()));}
   @PostMapping("/register/customer") ResponseEntity<?> registerCustomer(@Valid @RequestBody CustomerRegisterRequest r){User u=service.registerCustomer(r);return ResponseEntity.status(201).body(Map.of("id",u.getId(),"email",u.getEmail(),"role",u.getRole()));}
+  @PostMapping("/register/owner") ResponseEntity<?> registerOwner(@Valid @RequestBody OwnerRegisterRequest r){User u=service.registerOwner(r);return ResponseEntity.status(201).body(Map.of("id",u.getId(),"email",u.getEmail(),"role",u.getRole()));}
 }
 
 @RestController @RequestMapping("/api/v1/agents")
@@ -22,7 +23,7 @@ class AgentController {
 }
 
 @RestController @RequestMapping("/api/v1/admin/users")
-@org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
+@org.springframework.security.access.prepost.PreAuthorize("hasRole('SUPER_ADMIN')")
 class AdminUserController {
   final CrmService s;AdminUserController(CrmService s){this.s=s;}
   @GetMapping List<UserAdminResponse> list(){return s.adminUsers();}
@@ -33,16 +34,18 @@ class AdminUserController {
 class PropertyController {
   final CrmService s;PropertyController(CrmService s){this.s=s;}
   @GetMapping List<PropertyResponse> list(@RequestParam(required=false) PropertyStatus status,@RequestParam(required=false) String type){return s.properties(status,type);}
-  @PostMapping @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')") ResponseEntity<PropertyResponse> create(@Valid @RequestBody PropertyRequest r){return ResponseEntity.status(201).body(s.createProperty(r));}
+  @PostMapping @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('SUPER_ADMIN','OWNER')") ResponseEntity<PropertyResponse> create(@Valid @RequestBody PropertyRequest r){return ResponseEntity.status(201).body(s.createProperty(r));}
+  @PutMapping("/{id}") @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('SUPER_ADMIN','OWNER')") PropertyResponse update(@PathVariable UUID id,@Valid @RequestBody PropertyUpdateRequest r){return s.updateProperty(id,r);}
+  @DeleteMapping("/{id}") @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('SUPER_ADMIN','OWNER')") ResponseEntity<Void> archive(@PathVariable UUID id){s.archiveProperty(id);return ResponseEntity.noContent().build();}
 }
 
 @RestController @RequestMapping("/api/v1/leads")
 class LeadController {
   final CrmService s;LeadController(CrmService s){this.s=s;}
-  @GetMapping @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('ADMIN','AGENT')") List<LeadResponse> list(Authentication a,@RequestAttribute("currentUserId") UUID id){return s.leads(id,a.getAuthorities().stream().anyMatch(x->x.getAuthority().equals("ROLE_ADMIN")));}
+  @GetMapping @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('SUPER_ADMIN','AGENT')") List<LeadResponse> list(Authentication a,@RequestAttribute("currentUserId") UUID id){return s.leads(id,a.getAuthorities().stream().anyMatch(x->x.getAuthority().equals("ROLE_SUPER_ADMIN")));}
   @GetMapping("/my") @org.springframework.security.access.prepost.PreAuthorize("hasRole('CUSTOMER')") List<LeadResponse> mine(@RequestAttribute("currentUserId") UUID id){return s.customerLeads(id);}
-  @PostMapping @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('ADMIN','AGENT')") ResponseEntity<LeadResponse> create(@Valid @RequestBody LeadRequest r,Authentication a,@RequestAttribute("currentUserId") UUID id){return ResponseEntity.status(201).body(s.createLead(r,id,a.getAuthorities().stream().anyMatch(x->x.getAuthority().equals("ROLE_ADMIN"))));}
-  @PatchMapping("/{id}/stage") @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('ADMIN','AGENT')") LeadResponse stage(@PathVariable UUID id,@Valid @RequestBody LeadStageRequest r,Authentication a,@RequestAttribute("currentUserId") UUID caller){return s.updateStage(id,r,caller,a.getAuthorities().stream().anyMatch(x->x.getAuthority().equals("ROLE_ADMIN")));}
+  @PostMapping @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('SUPER_ADMIN','AGENT')") ResponseEntity<LeadResponse> create(@Valid @RequestBody LeadRequest r,Authentication a,@RequestAttribute("currentUserId") UUID id){return ResponseEntity.status(201).body(s.createLead(r,id,a.getAuthorities().stream().anyMatch(x->x.getAuthority().equals("ROLE_SUPER_ADMIN"))));}
+  @PatchMapping("/{id}/stage") @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('SUPER_ADMIN','AGENT')") LeadResponse stage(@PathVariable UUID id,@Valid @RequestBody LeadStageRequest r,Authentication a,@RequestAttribute("currentUserId") UUID caller){return s.updateStage(id,r,caller,a.getAuthorities().stream().anyMatch(x->x.getAuthority().equals("ROLE_SUPER_ADMIN")));}
 }
 
 @RestController @RequestMapping("/api/v1/agent-requests")
@@ -72,19 +75,19 @@ class NotificationController {
 @RestController @RequestMapping("/api/v1/site-visits")
 class SiteVisitController {
   final CrmService s;SiteVisitController(CrmService s){this.s=s;}
-  @GetMapping @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('ADMIN','AGENT')") List<VisitResponse> list(Authentication a,@RequestAttribute("currentUserId") UUID id){return s.visits(id,a.getAuthorities().stream().anyMatch(x->x.getAuthority().equals("ROLE_ADMIN")),false);}
+  @GetMapping @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('SUPER_ADMIN','AGENT')") List<VisitResponse> list(Authentication a,@RequestAttribute("currentUserId") UUID id){return s.visits(id,a.getAuthorities().stream().anyMatch(x->x.getAuthority().equals("ROLE_SUPER_ADMIN")),false);}
   @GetMapping("/my") @org.springframework.security.access.prepost.PreAuthorize("hasRole('CUSTOMER')") List<VisitResponse> mine(@RequestAttribute("currentUserId") UUID id){return s.visits(id,false,true);}
-  @PostMapping @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('ADMIN','AGENT','CUSTOMER')") ResponseEntity<VisitResponse> create(@Valid @RequestBody VisitRequest r,Authentication a,@RequestAttribute("currentUserId") UUID id){boolean admin=a.getAuthorities().stream().anyMatch(x->x.getAuthority().equals("ROLE_ADMIN"));boolean customer=a.getAuthorities().stream().anyMatch(x->x.getAuthority().equals("ROLE_CUSTOMER"));return ResponseEntity.status(201).body(s.createVisit(r,id,admin,customer));}
-  @PatchMapping("/{id}") @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('ADMIN','AGENT')") VisitResponse update(@PathVariable UUID id,@Valid @RequestBody VisitUpdateRequest r,Authentication a,@RequestAttribute("currentUserId") UUID caller){return s.updateVisit(id,r,caller,a.getAuthorities().stream().anyMatch(x->x.getAuthority().equals("ROLE_ADMIN")));}
+  @PostMapping @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('SUPER_ADMIN','AGENT','CUSTOMER')") ResponseEntity<VisitResponse> create(@Valid @RequestBody VisitRequest r,Authentication a,@RequestAttribute("currentUserId") UUID id){boolean admin=a.getAuthorities().stream().anyMatch(x->x.getAuthority().equals("ROLE_SUPER_ADMIN"));boolean customer=a.getAuthorities().stream().anyMatch(x->x.getAuthority().equals("ROLE_CUSTOMER"));return ResponseEntity.status(201).body(s.createVisit(r,id,admin,customer));}
+  @PatchMapping("/{id}") @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('SUPER_ADMIN','AGENT')") VisitResponse update(@PathVariable UUID id,@Valid @RequestBody VisitUpdateRequest r,Authentication a,@RequestAttribute("currentUserId") UUID caller){return s.updateVisit(id,r,caller,a.getAuthorities().stream().anyMatch(x->x.getAuthority().equals("ROLE_SUPER_ADMIN")));}
 }
 
 @RestController @RequestMapping("/api/v1/deals")
 class DealController {
   final CrmService s;DealController(CrmService s){this.s=s;}
-  @GetMapping @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('ADMIN','AGENT')") List<DealResponse> list(Authentication a,@RequestAttribute("currentUserId") UUID id){return s.deals(id,a.getAuthorities().stream().anyMatch(x->x.getAuthority().equals("ROLE_ADMIN")),false);}
+  @GetMapping @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('SUPER_ADMIN','AGENT')") List<DealResponse> list(Authentication a,@RequestAttribute("currentUserId") UUID id){return s.deals(id,a.getAuthorities().stream().anyMatch(x->x.getAuthority().equals("ROLE_SUPER_ADMIN")),false);}
   @GetMapping("/my") @org.springframework.security.access.prepost.PreAuthorize("hasRole('CUSTOMER')") List<DealResponse> mine(@RequestAttribute("currentUserId") UUID id){return s.deals(id,false,true);}
-  @PostMapping @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('ADMIN','AGENT')") ResponseEntity<DealResponse> close(@Valid @RequestBody DealRequest r,Authentication a,@RequestAttribute("currentUserId") UUID id){return ResponseEntity.status(201).body(s.closeDeal(r,id,a.getAuthorities().stream().anyMatch(x->x.getAuthority().equals("ROLE_ADMIN"))));}
+  @PostMapping @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('SUPER_ADMIN','AGENT')") ResponseEntity<DealResponse> close(@Valid @RequestBody DealRequest r,Authentication a,@RequestAttribute("currentUserId") UUID id){return ResponseEntity.status(201).body(s.closeDeal(r,id,a.getAuthorities().stream().anyMatch(x->x.getAuthority().equals("ROLE_SUPER_ADMIN"))));}
 }
 
 @RestController @RequestMapping("/api/v1/dashboard")
-class DashboardController {final CrmService s;DashboardController(CrmService s){this.s=s;} @GetMapping @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('ADMIN','AGENT')") DashboardMetricsResponse metrics(){return s.metrics();}}
+class DashboardController {final CrmService s;DashboardController(CrmService s){this.s=s;} @GetMapping @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('SUPER_ADMIN','AGENT')") DashboardMetricsResponse metrics(){return s.metrics();}}

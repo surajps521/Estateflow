@@ -73,13 +73,16 @@ class SecurityConfig {
   @Bean AuthenticationManager authenticationManager(AuthenticationConfiguration c)throws Exception{return c.getAuthenticationManager();}
   @Bean SecurityFilterChain filterChain(HttpSecurity http,JwtAuthenticationFilter jwt)throws Exception{
     return http.csrf(c->c.disable()).cors(Customizer.withDefaults()).sessionManagement(s->s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+      .exceptionHandling(e->e.authenticationEntryPoint((req,res,exception)->res.sendError(HttpServletResponse.SC_UNAUTHORIZED)))
       .authorizeHttpRequests(a->a.requestMatchers(HttpMethod.OPTIONS,"/**").permitAll()
-        .requestMatchers("/api/v1/auth/login","/api/v1/auth/register/customer","/v3/api-docs/**","/swagger-ui/**","/swagger-ui.html").permitAll()
-        .requestMatchers(HttpMethod.POST,"/api/v1/auth/register").hasRole("ADMIN")
-        .requestMatchers(HttpMethod.POST,"/api/v1/properties").hasRole("ADMIN")
+        .requestMatchers("/api/v1/auth/login","/api/v1/auth/register/customer","/api/v1/auth/register/owner","/v3/api-docs/**","/swagger-ui/**","/swagger-ui.html").permitAll()
+        .requestMatchers(HttpMethod.POST,"/api/v1/auth/register").hasRole("SUPER_ADMIN")
+        .requestMatchers(HttpMethod.POST,"/api/v1/properties").hasAnyRole("SUPER_ADMIN","OWNER")
+        .requestMatchers(HttpMethod.PUT,"/api/v1/properties/**").hasAnyRole("SUPER_ADMIN","OWNER")
+        .requestMatchers(HttpMethod.DELETE,"/api/v1/properties/**").hasAnyRole("SUPER_ADMIN","OWNER")
         .requestMatchers(HttpMethod.GET,"/api/v1/leads/my","/api/v1/site-visits/my","/api/v1/deals/my","/api/v1/recommendations/my").hasRole("CUSTOMER")
         .requestMatchers("/api/v1/agents/**","/api/v1/agent-requests/**","/api/v1/notifications/**").authenticated()
-        .requestMatchers("/api/v1/leads/**","/api/v1/site-visits/**","/api/v1/deals/**","/api/v1/dashboard/**").hasAnyRole("ADMIN","AGENT")
+        .requestMatchers("/api/v1/leads/**","/api/v1/site-visits/**","/api/v1/deals/**","/api/v1/dashboard/**").hasAnyRole("SUPER_ADMIN","AGENT")
         .anyRequest().authenticated())
       .addFilterBefore(jwt,UsernamePasswordAuthenticationFilter.class).build();
   }

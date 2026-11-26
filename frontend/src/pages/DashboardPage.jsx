@@ -1,6 +1,6 @@
 import {useEffect,useMemo,useState} from 'react';
 import {ArrowUpRight,Bell,Building2,CalendarDays,Check,ChevronRight,Clock3,Handshake,IndianRupee,MapPin,Plus,Sparkles,TrendingUp,UserRound,Users,X} from 'lucide-react';
-import {Link} from 'react-router-dom';
+import {Link,Navigate} from 'react-router-dom';
 import api from '../api/axiosClient';
 import {useAuth} from '../context/AuthContext';
 
@@ -69,8 +69,9 @@ function AgentDashboard(){
 export default function DashboardPage(){
   const {user}=useAuth();
   const [m,setM]=useState(null),[err,setErr]=useState(''),[active,setActive]=useState('totalProperties'),[view,setView]=useState('overview'),[pointer,setPointer]=useState({x:50,y:50});
-  useEffect(()=>{if(user?.role!=='CUSTOMER')api.get('/dashboard').then(r=>setM(r.data)).catch(()=>setErr('Could not load dashboard metrics.'));},[user?.role]);
+  useEffect(()=>{if(!['CUSTOMER','OWNER'].includes(user?.role))api.get('/dashboard').then(r=>setM(r.data)).catch(()=>setErr('Could not load dashboard metrics.'));},[user?.role]);
   const selected=useMemo(()=>cards.find(card=>card[1]===active)||cards[0],[active]);
+  if(user?.role==='OWNER')return <Navigate to="/properties" replace/>;
   if(user?.role==='CUSTOMER')return <CustomerDashboard/>;
   if(user?.role==='AGENT')return <AgentDashboard/>;
   if(user?.role==='CUSTOMER')return <div><section className="welcome-hero relative overflow-hidden rounded-3xl p-8 md:p-12"><div className="animate-float absolute -right-10 -top-20 h-72 w-72 rounded-full bg-blue-500/30 blur-3xl"/><div className="relative max-w-2xl"><p className="text-xs font-bold uppercase tracking-[0.25em] text-blue-300">Welcome to EstateFlow</p><h1 className="mt-4 text-4xl font-black tracking-tight md:text-5xl">Your next chapter starts here.</h1><p className="mt-4 max-w-lg text-slate-300">Browse curated homes, save your favorites, and find a space that matches the way you want to live.</p><Link to="/properties" className="mt-7 inline-flex items-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-bold text-slate-950 shadow-lg transition hover:-translate-y-1 hover:shadow-xl">Explore properties <ArrowUpRight size={17}/></Link></div></section><div className="mt-6 grid gap-4 sm:grid-cols-3">{[['Curated listings','Explore homes selected for you',Building2],['Save favorites','Keep your shortlist in one place',Handshake],['Expert support','Our agents are ready to help',Users]].map(([title,text,Icon],index)=><div className={`motion-card rounded-2xl border bg-white p-5 delay-${index+1}`} key={title}><Icon className="text-blue-600" size={22}/><p className="mt-4 font-bold">{title}</p><p className="mt-1 text-sm text-slate-500">{text}</p></div>)}</div></div>;

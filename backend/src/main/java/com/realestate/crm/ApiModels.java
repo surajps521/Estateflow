@@ -8,11 +8,13 @@ import java.util.UUID;
 record LoginRequest(@NotBlank @Email String email,@NotBlank String password){}
 record RegisterRequest(@NotBlank @Email String email,@NotBlank @Size(min=8) @Pattern(regexp="^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[^A-Za-z0-9]).{8,}$",message="Password must contain 8+ characters, uppercase and lowercase letters, a number, and a special character") String password,@NotNull Role role){}
 record CustomerRegisterRequest(@NotBlank @Email String email,@NotBlank @Size(min=8) @Pattern(regexp="^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[^A-Za-z0-9]).{8,}$",message="Password must contain 8+ characters, uppercase and lowercase letters, a number, and a special character") String password,@NotBlank String displayName,@NotBlank String phone,String preferredLocation,@Positive BigDecimal budgetMax,String requirements){}
+record OwnerRegisterRequest(@NotBlank @Email String email,@NotBlank @Size(min=8) @Pattern(regexp="^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[^A-Za-z0-9]).{8,}$",message="Password must contain 8+ characters, uppercase and lowercase letters, a number, and a special character") String password,@NotBlank String displayName,@NotBlank String phone,String preferredLocation,@Positive BigDecimal budgetMax,String requirements){}
 record AuthResponse(String token,UUID userId,String email,String role){}
 record AgentResponse(UUID id,String email,String displayName,String phone,Integer experienceYears,String specialization,String profileImageUrl,boolean available){}
 record UserAdminResponse(UUID id,String email,String role,boolean active){}
-record PropertyRequest(@NotBlank String title,@NotBlank String type,@NotNull @Positive BigDecimal price,@NotNull @Positive Integer areaSqft,String location,String configuration,String imageUrl){}
-record PropertyResponse(UUID id,String title,String type,String status,BigDecimal price,Integer areaSqft,String location,String configuration,String imageUrl){}
+record PropertyRequest(@NotBlank String title,@NotBlank String type,@NotNull @Positive BigDecimal price,@Positive BigDecimal basePrice,@NotNull @Positive Integer areaSqft,String location,String configuration,String imageUrl){}
+record PropertyUpdateRequest(@NotBlank String title,@NotBlank String type,@NotNull @Positive BigDecimal price,@Positive BigDecimal basePrice,@NotNull @Positive Integer areaSqft,String location,String configuration,String imageUrl,@NotNull PropertyStatus status){}
+record PropertyResponse(UUID id,String title,String type,String status,BigDecimal price,BigDecimal basePrice,Integer areaSqft,String location,String configuration,String imageUrl){}
 record LeadRequest(@NotBlank String fullName,@NotBlank String phone,@NotNull @Positive BigDecimal budgetMax,UUID agentId){}
 record LeadStageRequest(@NotNull LeadStage stage){}
 record LeadResponse(UUID id,String fullName,String phone,String stage,BigDecimal budgetMax,UUID assignedAgentId,String assignedAgentName,UUID customerId,String customerName){}

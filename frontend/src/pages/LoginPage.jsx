@@ -5,7 +5,7 @@ import {useAuth} from '../context/AuthContext';
 import {useTheme} from '../context/ThemeContext';
 
 export default function LoginPage(){
-  const {user,login,registerCustomer}=useAuth();
+  const {user,login,registerCustomer,registerOwner}=useAuth();
   const {theme,toggleTheme}=useTheme();
   const [mode,setMode]=useState('login');
   const [loginRole,setLoginRole]=useState('CUSTOMER');
@@ -30,6 +30,18 @@ export default function LoginPage(){
 
   if(user)return <Navigate to="/dashboard" replace />;
 
+  function switchToSignIn(role){
+    setLoginRole(role);
+    setMode('login');
+    setError('');
+  }
+
+  function switchToRegistration(role){
+    setLoginRole(role);
+    setMode('register');
+    setError('');
+  }
+
   async function submit(event){
     event.preventDefault();
     setError('');
@@ -41,11 +53,12 @@ export default function LoginPage(){
           setBusy(false);
           return;
         }
-        await registerCustomer({email,password,displayName,phone,preferredLocation:location,budgetMax:budget?Number(budget):null,requirements});
+        if(loginRole==='OWNER') await registerOwner({email,password,displayName,phone,preferredLocation:location,budgetMax:budget?Number(budget):null,requirements});
+        else await registerCustomer({email,password,displayName,phone,preferredLocation:location,budgetMax:budget?Number(budget):null,requirements});
         setMode('login');
-        setLoginRole('CUSTOMER');
+        setLoginRole(loginRole==='OWNER'?'OWNER':'CUSTOMER');
         setPassword('');
-        setError('Account created. Sign in as a customer to continue.');
+        setError(`Account created. Sign in as a ${loginRole.toLowerCase()} to continue.`);
       } else {
         await login(email,password,loginRole);
         window.location.href='/dashboard';
@@ -67,25 +80,31 @@ export default function LoginPage(){
     <form onSubmit={submit} className="login-card">
       <div className="login-brand"><img src="/estateflow-mark.svg" alt="" /><div><strong>ESTATEFLOW</strong><span>Property intelligence workspace</span></div></div>
       <div className="login-tabs">
-        <button type="button" className={mode==='login'?'active':''} onClick={()=>setMode('login')}>Sign in</button>
-        <button type="button" className={mode==='register'?'active':''} onClick={()=>setMode('register')}>Create customer account</button>
+        <button type="button" className={mode==='login'?'active':''} onClick={()=>switchToSignIn(loginRole)}>Sign in</button>
+        {(loginRole==='CUSTOMER'||loginRole==='OWNER')&&<button type="button" className={mode==='register'?'active':''} onClick={()=>switchToRegistration(loginRole)}>Create {loginRole==='OWNER'?'owner':'customer'} account</button>}
       </div>
       {mode==='login'&&<div className="login-role-grid" aria-label="Select account role">
-        <button type="button" className={loginRole==='CUSTOMER'?'selected':''} onClick={()=>setLoginRole('CUSTOMER')}>
+        <button type="button" className={loginRole==='CUSTOMER'?'selected':''} onClick={()=>{setLoginRole('CUSTOMER');setMode('register');setError('');}}>
           <UserRound size={20}/><span><strong>Customer</strong><small>Discover and enquire</small></span>
         </button>
-        <button type="button" className={loginRole==='AGENT'?'selected':''} onClick={()=>setLoginRole('AGENT')}>
+        <button type="button" className={loginRole==='AGENT'?'selected':''} onClick={()=>{setLoginRole('AGENT');setMode('login');setError('');}}>
           <Building2 size={20}/><span><strong>Agent</strong><small>Manage clients and visits</small></span>
         </button>
-        <button type="button" className={loginRole==='ADMIN'?'selected':''} onClick={()=>setLoginRole('ADMIN')}>
-          <ShieldCheck size={20}/><span><strong>Admin</strong><small>Manage workspace</small></span>
+        <button type="button" className={loginRole==='OWNER'?'selected':''} onClick={()=>{setLoginRole('OWNER');setMode('register');setError('');}}>
+          <Building2 size={20}/><span><strong>Owner</strong><small>Add properties and set base price</small></span>
+        </button>
+        <button type="button" className={loginRole==='SUPER_ADMIN'?'selected':''} onClick={()=>{setLoginRole('SUPER_ADMIN');setMode('login');setError('');}}>
+          <ShieldCheck size={20}/><span><strong>Super admin</strong><small>Manage workspace</small></span>
         </button>
       </div>}
       {mode==='register'&&<div className="login-role-grid customer-only">
-        <button type="button" className="selected"><ShieldCheck size={20}/><span><strong>Customer</strong><small>Account registration</small></span></button>
+        <button type="button" className="selected">
+          {loginRole==='OWNER'?<Building2 size={20}/>:<ShieldCheck size={20}/>}
+          <span><strong>{loginRole==='OWNER'?'Owner':'Customer'}</strong><small>Account registration</small></span>
+        </button>
       </div>}
-      <h1>{mode==='login'?'Welcome back':'Find your next home'}</h1>
-      <p className="login-subtitle">{mode==='login'?`Sign in to your ${loginRole.toLowerCase()} workspace.`:'Create a customer account and connect with an agent.'}</p>
+      <h1>{mode==='login'?'Welcome back':loginRole==='OWNER'?'Create an owner account':'Find your next home'}</h1>
+      <p className="login-subtitle">{mode==='login'?`Sign in to your ${loginRole.toLowerCase()} workspace.`:loginRole==='OWNER'?'Register as an owner and list properties.':'Create a customer account and connect with an agent.'}</p>
       {error&&<p className={`login-error ${error.includes('created')?'success':''}`}>{error}</p>}
       {mode==='register'&&<div className="login-register-grid">
         <input placeholder="Full name" value={displayName} onChange={e=>setDisplayName(e.target.value)} required/>
@@ -110,7 +129,7 @@ export default function LoginPage(){
         <span className={passwordRules.number?'valid':''}>Number</span>
         <span className={passwordRules.special?'valid':''}>Special character</span>
       </div>}
-      <button disabled={busy} className="login-submit">{busy?(mode==='login'?'Signing in...':'Creating account...'):(mode==='login'?`Sign in as ${loginRole.toLowerCase()}`:'Create customer account')}</button>
+      <button disabled={busy} className="login-submit">{busy?(mode==='login'?'Signing in...':'Creating account...'):(mode==='login'?`Sign in as ${loginRole.toLowerCase()}`:`Create ${loginRole==='OWNER'?'owner':'customer'} account`)}</button>
     </form>
   </div>;
 }
